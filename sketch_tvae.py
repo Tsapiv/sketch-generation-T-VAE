@@ -20,7 +20,7 @@ class HParams():
         self.dec_hidden_size = 512
         self.Nz = 123
         self.M = 20
-        self.dropout = 0.9
+        self.dropout = 0.0
         self.batch_size = 100
         self.eta_min = 0.01
         self.R = 0.99995
@@ -124,7 +124,7 @@ class EncoderRNN(nn.Module):
     def __init__(self):
         super(EncoderRNN, self).__init__()
         # bidirectional lstm:
-        self.lstm = nn.LSTM(5, hp.enc_hidden_size, dropout=hp.dropout, bidirectional=True)
+        # self.lstm = nn.LSTM(5, hp.enc_hidden_size, dropout=hp.dropout, bidirectional=True)
         # create mu and sigma from lstm's last output:
         self.fc_up = nn.Linear(5, hp.enc_hidden_size)
         # self.fc_mu = nn.Linear(hp.enc_hidden_size, hp.Nz)
@@ -170,11 +170,11 @@ class DecoderRNN(nn.Module):
         # to init hidden and cell from z:
 
         # unidirectional lstm:
-        self.latent_dim = 512
-        self.fc_hc = nn.Linear(hp.enc_hidden_size, self.latent_dim)
+        self.latent_dim = hp.enc_hidden_size
+        # self.fc_hc = nn.Linear(hp.enc_hidden_size, self.latent_dim)
         self.fc_params = nn.Linear(self.latent_dim, 6 * hp.M + 3)
 
-        self.actionBiases = nn.Parameter(torch.randn(1, hp.enc_hidden_size))
+        # self.actionBiases = nn.Parameter(torch.randn(1, hp.enc_hidden_size))
         self.fc_up = nn.Linear(5, self.latent_dim)
 
 
@@ -192,13 +192,13 @@ class DecoderRNN(nn.Module):
         self.finallayer = nn.Linear(self.latent_dim, 6 * hp.M + 3)
 
     def forward(self, inputs, z, *args):
-        if inputs.shape[0] < Nmax:
-            inputs = torch.cat([inputs, torch.zeros(Nmax - inputs.shape[0], *inputs.shape[1:])])
-        z = z + self.actionBiases
-        z = self.fc_hc(z[None])  # sequence of size 1
+        # if inputs.shape[0] < Nmax:
+        #     inputs = torch.cat([inputs, torch.zeros(Nmax - inputs.shape[0], *inputs.shape[1:])])
+        # z = z + self.actionBiases
+        # z = self.fc_hc(z[None])  # sequence of size 1
         timequeries = self.fc_up(inputs)#torch.zeros(*inputs.shape[:-1], z.shape[-1], device=z.device)
         timequeries = self.sequence_pos_encoder(timequeries)
-        outputs = self.seqTransDecoder(tgt=timequeries, memory=z)
+        outputs = self.seqTransDecoder(tgt=timequeries, memory=z[None])
 
         # in training we feed the lstm with the whole input in one shot
         # and use all outputs contained in 'outputs', while in generate
