@@ -121,34 +121,39 @@ def lr_decay(optimizer):
 
 ################################# encoder and decoder modules
 class EncoderRNN(nn.Module):
-    def __init__(self, fc_up):
+    def __init__(self, embed_dim=5,
+                 latent_dim=hp.enc_hidden_size,
+                 dropout=hp.dropout,
+                 nhead=4,
+                 num_layers=2,
+                 layer_norm_eps=1e-5):
         super(EncoderRNN, self).__init__()
-        # bidirectional lstm:
-        # self.lstm = nn.LSTM(5, hp.enc_hidden_size, dropout=hp.dropout, bidirectional=True)
-        # create mu and sigma from lstm's last output:
-        self.fc_up = nn.Linear(5, hp.enc_hidden_size)
-        # self.fc_mu = nn.Linear(hp.enc_hidden_size, hp.Nz)
-        # self.fc_sigma = nn.Linear(hp.enc_hidden_size, hp.Nz)
-        self.muQuery = nn.Parameter(torch.randn(1, hp.enc_hidden_size))
-        self.sigmaQuery = nn.Parameter(torch.randn(1, hp.enc_hidden_size))
-        self.sequence_pos_encoder = PositionalEncoding(hp.enc_hidden_size, hp.dropout)
-        # self.y = torch.zeros(hp.batch_size, dtype=torch.long)
+        self.latent_dim = latent_dim
+        self.embed_dim = embed_dim
+        self.dropout = dropout
+        self.nhead = nhead
+        self.num_layers = num_layers
+        self.layer_norm_eps = layer_norm_eps
 
-        # self.pos_embedding = nn.Parameter(torch.randn(1, num_patches + 1, dim))
-        seqTransEncoderLayer = nn.TransformerEncoderLayer(d_model=hp.enc_hidden_size, nhead=4,
-                                                          dim_feedforward=hp.enc_hidden_size * 4, dropout=hp.dropout,
-                                                          activation="gelu")
-        self.seqTransEncoder = nn.TransformerEncoder(seqTransEncoderLayer, num_layers=2)
-        # active dropout:
-        self.train()
+        self.fc_up = nn.Linear(self.embed_dim, self.latent_dim)
+
+        self.mu_query = nn.Parameter(torch.randn(1, self.latent_dim))
+        self.sigma_query = nn.Parameter(torch.randn(1, self.latent_dim))
+        self.sequence_pos_encoder = PositionalEncoding(self.latent_dim, self.dropout)
+
+        encoder_layer = nn.TransformerEncoderLayer(d_model=self.latent_dim, nhead=self.nhead,
+                                                   dim_feedforward=self.latent_dim * 4, dropout=self.dropout,
+                                                   activation="gelu")
+        norm_layer = nn.LayerNorm(self.latent_dim, eps=self.layer_norm_eps)
+        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=self.num_layers, norm=norm_layer)
 
     def forward(self, inputs, batch_size, *args):
 
         x = self.fc_up(inputs)
         y = torch.zeros(batch_size, dtype=torch.long)
-        xseq = torch.cat((self.muQuery[y][None], self.sigmaQuery[y][None], x), dim=0)
+        xseq = torch.cat((self.mu_query[y][None], self.sigma_query[y][None], x), dim=0)
         xseq = self.sequence_pos_encoder(xseq)
-        final = self.seqTransEncoder(xseq)
+        final = self.encoder(xseq)
         mu = final[0]
         sigma_hat = final[1]
 
@@ -176,7 +181,6 @@ class DecoderRNN(nn.Module):
 
         # self.actionBiases = nn.Parameter(torch.randn(1, hp.enc_hidden_size))
         # self.fc_up = fc_up#nn.Linear(5, self.latent_dim)
-
 
         # only for ablation / not used in the final model
         self.sequence_pos_encoder = PositionalEncoding(self.latent_dim, hp.dropout)
