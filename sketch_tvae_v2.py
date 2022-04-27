@@ -19,18 +19,18 @@ class HParams():
         self.enc_hidden_size = 128
         self.dec_hidden_size = 512
         self.Nz = 123
-        self.M = 20
-        self.dropout = 0.9
-        self.batch_size = 150
-        self.eta_min = 0.01
+        self.M = 10
+        self.dropout = 0.0
+        self.batch_size = 100
+        self.eta_min = 0.1
         self.R = 0.99995
         self.KL_min = 0.2
-        self.wKL = 0.5
+        self.wKL = 222
         self.lr = 0.001
-        self.lr_decay = 0.99
+        self.lr_decay = 0.9999
         self.min_lr = 0.00001
         self.grad_clip = 1.
-        self.temperature = 0.1
+        self.temperature = 0.4
         self.max_seq_length = 200
 
 
@@ -121,7 +121,7 @@ def lr_decay(optimizer):
 
 ################################# encoder and decoder modules
 class EncoderRNN(nn.Module):
-    def __init__(self, embed_dim=5, latent_dim=hp.enc_hidden_size, dropout=hp.dropout, nhead=8, num_layers=1,
+    def __init__(self, embed_dim=5, latent_dim=hp.enc_hidden_size, dropout=hp.dropout, nhead=1, num_layers=1,
                  layer_norm_eps=1e-5):
         super(EncoderRNN, self).__init__()
         self.latent_dim = latent_dim
@@ -138,11 +138,11 @@ class EncoderRNN(nn.Module):
         # self.mu_query = nn.Parameter(torch.randn(1, self.latent_dim))
         # self.sigma_query = nn.Parameter(torch.randn(1, self.latent_dim))
         # self.sequence_pos_encoder = PositionalEncoding(self.latent_dim, 0, max_len=hp.max_seq_length)
-        self.fc_mu = nn.Linear(self.latent_dim, self.latent_dim)
-        self.fc_sigma = nn.Linear(self.latent_dim, self.latent_dim)
+        self.fc_mu = nn.Linear(self.latent_dim, self.latent_dim - self.embed_dim)
+        self.fc_sigma = nn.Linear(self.latent_dim, self.latent_dim - self.embed_dim)
 
         encoder_layer = nn.TransformerEncoderLayer(d_model=self.latent_dim, nhead=self.nhead,
-                                                   dim_feedforward=self.latent_dim, dropout=self.dropout,
+                                                   dim_feedforward=self.latent_dim * 2, dropout=self.dropout,
                                                    activation="gelu")
         norm_layer = nn.LayerNorm(self.latent_dim, eps=self.layer_norm_eps)
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=self.num_layers, norm=norm_layer)
@@ -156,8 +156,9 @@ class EncoderRNN(nn.Module):
 
         # x = self.sequence_pos_encoder(x)
         final = self.encoder(x)
-        mu = self.fc_mu(final[0])
-        sigma_hat = self.fc_sigma(final[0])
+        s = torch.mean(final, dim=0)
+        mu = self.fc_mu(s)
+        sigma_hat = self.fc_sigma(s)
 
         sigma = torch.exp(sigma_hat / 2.)
         # N ~ N(0,1)
@@ -172,7 +173,7 @@ class EncoderRNN(nn.Module):
 
 
 class DecoderRNN(nn.Module):
-    def __init__(self, embed_dim=5 + hp.enc_hidden_size, latent_dim=hp.enc_hidden_size, dropout=hp.dropout, nhead=8, num_layers=1,
+    def __init__(self, embed_dim=hp.enc_hidden_size, latent_dim=hp.enc_hidden_size, dropout=hp.dropout, nhead=1, num_layers=1,
                  layer_norm_eps=1e-5):
         super(DecoderRNN, self).__init__()
         # to init hidden and cell from z:
@@ -183,14 +184,14 @@ class DecoderRNN(nn.Module):
         self.num_layers = num_layers
         self.layer_norm_eps = layer_norm_eps
 
-        self.fc_scale = nn.Linear(self.embed_dim, self.latent_dim)
+        # self.fc_scale = nn.Linear(self.embed_dim, self.latent_dim)
         # self.relu = nn.ReLU()
 
         self.fc_params = nn.Linear(self.latent_dim, 6 * hp.M + 3)
 
         # self.sequence_pos_encoder = PositionalEncoding(self.latent_dim, 0, max_len=hp.max_seq_length)
         decoder_layer = nn.TransformerDecoderLayer(d_model=self.latent_dim, nhead=self.nhead,
-                                                   dim_feedforward=self.latent_dim, dropout=self.dropout,
+                                                   dim_feedforward=self.latent_dim * 2, dropout=self.dropout,
                                                    activation="gelu")
         norm_layer = nn.LayerNorm(self.latent_dim, eps=self.layer_norm_eps)
         self.decoder = nn.TransformerDecoder(decoder_layer, num_layers=self.num_layers, norm=norm_layer)
@@ -201,7 +202,7 @@ class DecoderRNN(nn.Module):
         #     inputs = torch.cat([inputs, torch.zeros(Nmax - inputs.shape[0], *inputs.shape[1:])])
         # z = z + self.actionBiases
         # z = self.fc_hc(z[None])  # sequence of size 1
-        timequeries = self.fc_scale(inputs)#torch.zeros(*inputs.shape[:-1], z.shape[-1], device=z.device)
+        timequeries = inputs #self.fc_scale(inputs) #torch.zeros(*inputs.shape[:-1], z.shape[-1], device=z.device)
         # timequeries = torch.normal(0, 1, size=(*inputs.shape[:-1], z.shape[-1]), device=z.device)
         # timequeries = torch.ones(Nmax + 1, inputs.shape[-2], z.shape[-1], device=z.device)
         # timequeries = self.sequence_pos_encoder(timequeries)
@@ -221,7 +222,7 @@ class DecoderRNN(nn.Module):
             len_out = Nmax + 1
         else:
             len_out = 1
-        # len_out = Nmax + 1
+
         pi = F.softmax(pi.transpose(0, 1).squeeze(), dim=-1).view(len_out, -1, hp.M)
         sigma_x = torch.exp(sigma_x.transpose(0, 1).squeeze()).view(len_out, -1, hp.M)
         sigma_y = torch.exp(sigma_y.transpose(0, 1).squeeze()).view(len_out, -1, hp.M)
