@@ -385,11 +385,11 @@ class Model:
         q = adjust_temp(q)
         q_idx = np.random.choice(3, p=q)
         # get mixture params:
-        mu_x = self.mu_x.data[0, 0, pi_idx]
-        mu_y = self.mu_y.data[0, 0, pi_idx]
-        sigma_x = self.sigma_x.data[0, 0, pi_idx]
-        sigma_y = self.sigma_y.data[0, 0, pi_idx]
-        rho_xy = self.rho_xy.data[0, 0, pi_idx]
+        mu_x = self.mu_x.data[0, 0, pi_idx].cpu().numpy()
+        mu_y = self.mu_y.data[0, 0, pi_idx].cpu().numpy()
+        sigma_x = self.sigma_x.data[0, 0, pi_idx].cpu().numpy()
+        sigma_y = self.sigma_y.data[0, 0, pi_idx].cpu().numpy()
+        rho_xy = self.rho_xy.data[0, 0, pi_idx].cpu().numpy()
         x, y = sample_bivariate_normal(mu_x, mu_y, sigma_x, sigma_y, rho_xy, greedy=False)
         next_state = torch.zeros(5)
         next_state[0] = x
