@@ -99,7 +99,6 @@ def make_batch(batch_size):
         new_seq[:len_seq, 3] = seq[:, 2]
         new_seq[(len_seq - 1):, 4] = 1
         new_seq[len_seq - 1, 2:4] = 0
-        # new_seq[len_seq:, :] = [0, 0, 0, 0, 1]
         lengths.append(len(seq[:, 0]))
         strokes.append(new_seq)
         indice += 1
@@ -122,7 +121,7 @@ def lr_decay(optimizer):
 
 ################################# encoder and decoder modules
 class EncoderRNN(nn.Module):
-    def __init__(self, embed_dim=5, latent_dim=hp.enc_hidden_size, dropout=hp.dropout, nhead=8, num_layers=1,
+    def __init__(self, embed_dim=5, latent_dim=hp.enc_hidden_size, dropout=hp.dropout, nhead=1, num_layers=1,
                  layer_norm_eps=1e-5):
         super(EncoderRNN, self).__init__()
         self.latent_dim = latent_dim
@@ -174,7 +173,7 @@ class EncoderRNN(nn.Module):
 
 
 class DecoderRNN(nn.Module):
-    def __init__(self, embed_dim=hp.enc_hidden_size, latent_dim=hp.enc_hidden_size, dropout=hp.dropout, nhead=8, num_layers=1,
+    def __init__(self, embed_dim=hp.enc_hidden_size, latent_dim=hp.enc_hidden_size, dropout=hp.dropout, nhead=1, num_layers=1,
                  layer_norm_eps=1e-5):
         super(DecoderRNN, self).__init__()
         # to init hidden and cell from z:
