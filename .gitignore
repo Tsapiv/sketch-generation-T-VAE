@@ -1,0 +1,4 @@
+lstm_*
+trans_*
+.idea
+__pycache__/

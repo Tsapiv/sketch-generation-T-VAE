@@ -1,0 +1,28 @@
+class HParams:
+    def __init__(self):
+        self.data_set = 'cat.npz'
+        self.enc_rnn_size = 256
+        self.dec_rnn_size = 512
+        self.z_size = 128
+        self.num_mixture = 20
+        self.input_dropout_prob = 0.9
+        self.output_dropout_prob = 0.9
+        self.batch_size = 100
+        self.kl_weight_start = 0.01
+        self.kl_decay_rate = 0.99995
+        self.kl_tolerance = 0.2
+        self.kl_weight = 100
+        self.learning_rate = 0.001
+        self.decay_rate = 0.9999
+        self.min_learning_rate = 0.00001
+        self.grad_clip = 1.
+        self.max_seq_len = 200
+        self.random_scale_factor = 0.15
+        self.augment_stroke_prob = 0.10
+        self.TransEncoder = False
+        self.foldername = 'lstm_samples'
+        self.dim_feedforward = 2048
+        self.dist_matching = 'MMD'  # KL vs MMD
+        self.model_folder = 'lstm_model'
+        self.single_embedding = True
+        self.codename = 'rnn-rnn'
