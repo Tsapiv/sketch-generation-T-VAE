@@ -71,7 +71,7 @@ class SketchModel(nn.Module):
 
         return kl_cost.item(), recons_loss.item(), loss.item(), curr_learning_rate, curr_kl_weight
 
-    def generation(self, dataloader=None, step=0, number_of_sample=100, condition=False, one_image=True):
+    def generation(self, dataloader=None, step=0, number_of_sample=100, condition=False, one_image=True, save=True):
 
         input_strokes = []
         reconstructed_strokes = []
@@ -113,27 +113,30 @@ class SketchModel(nn.Module):
             reconstructed_strokes.append([gen_strokes, [row_count - 1, col_count]])
             col_count = col_count + 1
             print(i_x)
-        if not os.path.exists(self.hp.foldername):
-            os.makedirs(self.hp.foldername)
-        if one_image:
+        if save:
+            if not os.path.exists(self.hp.foldername):
+                os.makedirs(self.hp.foldername)
+            if one_image:
 
-            if dataloader is not None:
-                input_grid = make_grid_svg(input_strokes)
-                draw_strokes(input_grid,
-                             svg_filename='./' + self.hp.foldername + '/original_' + str(step) + '_sample.svg')
-
-            reconstructed_grid = make_grid_svg(reconstructed_strokes)
-            draw_strokes(reconstructed_grid,
-                         svg_filename='./' + self.hp.foldername + '/reconstruct_' + str(step) + '_sample.svg')
-        else:
-            for idx in range(len(reconstructed_strokes)):
                 if dataloader is not None:
-                    draw_strokes(input_strokes[idx][0],
-                                 svg_filename='./' + self.hp.foldername + '/original_' + str(
+                    input_grid = make_grid_svg(input_strokes)
+                    draw_strokes(input_grid,
+                                 svg_filename='./' + self.hp.foldername + '/original_' + str(step) + '_sample.svg')
+
+                reconstructed_grid = make_grid_svg(reconstructed_strokes)
+                draw_strokes(reconstructed_grid,
+                             svg_filename='./' + self.hp.foldername + '/reconstruct_' + str(step) + '_sample.svg')
+            else:
+                for idx in range(len(reconstructed_strokes)):
+                    if dataloader is not None:
+                        draw_strokes(input_strokes[idx][0],
+                                     svg_filename='./' + self.hp.foldername + '/original_' + str(
+                                         step) + f'_sample_{idx}.svg')
+                    draw_strokes(reconstructed_strokes[idx][0],
+                                 svg_filename='./' + self.hp.foldername + '/reconstruct_' + str(
                                      step) + f'_sample_{idx}.svg')
-                draw_strokes(reconstructed_strokes[idx][0],
-                             svg_filename='./' + self.hp.foldername + '/reconstruct_' + str(
-                                 step) + f'_sample_{idx}.svg')
+        return list(map(lambda x: x[0], input_strokes)) if dataloader else None, list(
+            map(lambda x: x[0], reconstructed_strokes))
 
     def sample_next_state(self, output, temperature=0.2):
 
