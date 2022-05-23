@@ -1,6 +1,8 @@
+from typing import Literal, Dict
+
+
 class HParams:
     def __init__(self):
-        self.data_set = 'cat.npz'
         self.enc_rnn_size = 256
         self.dec_rnn_size = 512
         self.z_size = 128
@@ -19,10 +21,14 @@ class HParams:
         self.max_seq_len = 200
         self.random_scale_factor = 0.15
         self.augment_stroke_prob = 0.10
-        self.TransEncoder = False
-        self.foldername = 'lstm_samples'
         self.dim_feedforward = 2048
-        self.dist_matching = 'MMD'  # KL vs MMD
-        self.model_folder = 'lstm_model'
         self.single_embedding = True
-        self.codename = 'rnn-rnn'
+        self.dist_matching: Literal['MMD', 'KL'] = 'MMD'
+
+        self.encoder: Literal['lstm', 'trans'] = 'lstm'
+        self.data_set = 'cat.npz'
+        self.model_folder = 'lstm_model'
+        self.output_folder = 'lstm_samples'
+
+    def update(self, config: Dict):
+        self.__dict__.update(config)

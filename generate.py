@@ -20,12 +20,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config = HParams()
     config.__dict__.update(json.load(open(args.config, 'r')))
-    config.foldername = 'lstm_generation'
+    config.output_folder = 'lstm_generation'
     print(config)
 
     dataloader = SketchDataset(config)
     model = SketchModel(config)
     model.load_state_dict(torch.load(args.model, map_location=device))
 
-    generated_samples = model.generation(dataloader=dataloader, number_of_sample=args.n_samples,
-                                         condition=args.condition, one_image=False)
+    generated_samples = model.generate_many(dataloader=dataloader, number_of_sample=args.n_samples,
+                                            condition=args.condition, grid_width=0)
