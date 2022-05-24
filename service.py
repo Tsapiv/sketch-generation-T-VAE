@@ -3,7 +3,6 @@ import os.path
 from argparse import ArgumentParser
 from enum import Enum
 
-import numpy as np
 import torch
 import uvicorn
 from fastapi import FastAPI
@@ -12,6 +11,7 @@ from pydantic.typing import List, Optional, Union
 
 from model import SketchModel, device
 from parameters import HParams
+from utils import convert3to5
 
 app = FastAPI()
 
@@ -38,7 +38,7 @@ class ModelCompeteQuery(BaseModel):
 
 
 class ModelGenerateQuery(BaseModel):
-    latent_vector: Optional[List[float]]
+    strokes: Optional[List[List[float]]] = None
     type: ModelType
     version: str = 'latest'
 
@@ -55,13 +55,14 @@ def setup_model(category: str, query: Union[ModelGenerateQuery, ModelCompeteQuer
 
 def generate_image(category: str, query: ModelGenerateQuery):
     model = setup_model(category, query)
-    strokes, _ = model.generate()
+    strokes, _ = model.generate(
+        convert3to5(query.strokes, model.hp.max_seq_len, complete=False) if query.strokes is not None else None)
     return strokes.tolist()
 
 
 def complete_image(category: str, query: ModelCompeteQuery):
     model = setup_model(category, query)
-    strokes = model.complete(np.asarray(query.strokes))
+    strokes, _ = model.complete(convert3to5(query.strokes, model.hp.max_seq_len, complete=True))
     return strokes.tolist()
 
 

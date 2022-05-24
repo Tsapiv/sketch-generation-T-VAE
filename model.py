@@ -1,4 +1,5 @@
 import os
+from typing import Literal
 
 import numpy as np
 import torch
@@ -11,7 +12,7 @@ from loss_functions import reconstruction_loss, mmd_penalty
 from parameters import HParams
 from utils import to_normal_strokes, make_grid_svg, draw_strokes, sample_bivariate_normal
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")#torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class SketchModel(nn.Module):
@@ -77,7 +78,11 @@ class SketchModel(nn.Module):
         self.eval()
         batch = None
         if dataloader is not None:
-            batch, lengths = dataloader.valid_batch(1)
+            batch, lengths = dataloader
+            # batch = torch.Tensor(batch, device=device).to(device)
+            # lengths = torch.Tensor(lengths, device=device).to(device)
+            batch = torch.as_tensor(batch, device=device, dtype=torch.float).view(-1, 1, 5)
+            lengths = torch.as_tensor(lengths, device=device, dtype=torch.float)
             post_dist = self.encoder(batch, lengths)
             z_vector = post_dist.sample()
         else:
@@ -94,15 +99,17 @@ class SketchModel(nn.Module):
             gen_strokes.append(next_state)
 
         gen_strokes = torch.stack(gen_strokes).cpu().numpy()
-        return to_normal_strokes(gen_strokes), to_normal_strokes(batch[:, 0, :].cpu().numpy()) if batch else None
+        return to_normal_strokes(gen_strokes), to_normal_strokes(batch[:, 0, :].cpu().numpy()) if batch is not None else None
 
-    def complete(self, dataloader, ratio=0.5):
+    def complete(self, dataloader, ratio: float = 1):
         self.eval()
 
-        batch, lengths = dataloader.valid_batch(1)
-        lengths = torch.LongTensor((lengths.cpu().numpy() * ratio).astype(np.int64)).to(device)
-        # lengths *= ratio
-        batch[lengths[0]:, :, :] = 0
+        batch, lengths = dataloader
+        batch = torch.as_tensor(batch, device=device, dtype=torch.float).view(-1, 1, 5)
+        lengths = torch.as_tensor(lengths, device=device, dtype=torch.float)
+        if ratio != 1:
+            lengths = torch.LongTensor((lengths.cpu().numpy() * ratio).astype(np.int64)).to(device)
+            batch[lengths[0]:, :, :] = 0
         post_dist = self.encoder(batch, lengths)
         z_vector = post_dist.sample()
 
@@ -122,13 +129,19 @@ class SketchModel(nn.Module):
         gen_strokes = torch.stack(gen_strokes).cpu().numpy()
         return to_normal_strokes(gen_strokes), to_normal_strokes(batch[:, 0, :].cpu().numpy())
 
-    def generate_many(self, dataloader=None, step=0, number_of_sample=100, condition=False, grid_width=10, save=True):
+    def generate_many(self, dataloader=None, step=0, number_of_sample=100, condition=False, grid_width=10, save=True,
+                      mode: Literal['generate', 'complete'] = 'generate', ratio=0.5):
 
         input_strokes = []
         reconstructed_strokes = []
 
         for i in range(number_of_sample):
-            gen_strokes, org_strokes = self.complete(dataloader if condition else None)
+            if mode == 'complete':
+                gen_strokes, org_strokes = self.complete(dataloader.valid_batch(1), ratio=ratio)
+            elif mode == 'generate':
+                gen_strokes, org_strokes = self.generate(dataloader.valid_batch(1) if condition else None)
+            else:
+                raise TypeError('Unknown mode type')
             if org_strokes is not None:
                 input_strokes.append(org_strokes)
             reconstructed_strokes.append(gen_strokes)

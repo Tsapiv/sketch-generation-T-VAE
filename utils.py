@@ -151,3 +151,16 @@ def get_bounds(data, factor=10):
         max_y = max(max_y, abs_y)
 
     return (min_x, max_x, min_y, max_y)
+
+
+def convert3to5(seq, max_seq_len, complete=False):
+    seq = np.asarray(seq)
+    len_seq = len(seq)
+    new_seq = np.zeros((max_seq_len, 5))
+    new_seq[:len_seq, :2] = seq[:, :2]
+    new_seq[:len_seq - 1, 2] = 1 - seq[:-1, 2]
+    new_seq[:len_seq, 3] = seq[:, 2]
+    if not complete:
+        new_seq[(len_seq - 1):, 4] = 1
+        new_seq[len_seq - 1, 2:4] = 0
+    return new_seq, [len_seq]
