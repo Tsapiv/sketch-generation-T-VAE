@@ -26,8 +26,8 @@ class HParams:
         self.dist_matching: Literal['MMD', 'KL'] = 'KL'
 
         self.encoder: Literal['lstm', 'trans'] = 'trans'
-        self.data_set = 'data/car.npz'
-        self.model_folder = 'models/car/trans'
+        self.data_set = 'data/firetruck.npz'
+        self.model_folder = 'models/firetruck/trans'
         self.output_folder = 'samples'
 
     def update(self, config: Dict):

@@ -2,13 +2,11 @@ import json
 import os.path
 from enum import Enum
 
+import torch
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pydantic.typing import List, Optional, Union
-import uvicorn
-
-import torch
 
 from model import SketchModel, device
 from parameters import HParams
@@ -28,12 +26,12 @@ MODELS_LOCATION = {
     'lstm': {
         'cat': 'models/cat/lstm/lstm-11999.pth',
         'car': 'models/car/lstm/lstm-7999.pth',
-        'firetruck': 'models/firetruck/lstm/lstm-7999.pth'
+        'firetruck': 'models/firetruck/lstm/lstm-5999.pth'
     },
     'trans': {
         'cat': 'models/cat/trans/trans-11999.pth',
         'car': 'models/car/trans/trans-7999.pth',
-        'firetruck': 'models/firetruck/trans/trans-7999.pth'
+        'firetruck': 'models/firetruck/trans/trans-5999.pth'
     }
 }
 
