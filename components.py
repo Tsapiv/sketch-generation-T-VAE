@@ -5,8 +5,7 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
 from parameters import HParams
 from utils import PositionalEncoding
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from model import device
 
 
 class EncoderRNN(nn.Module):

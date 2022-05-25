@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<script src="./canvas.js" defer></script>
+<body onload="init()">
+<canvas id="draw_canvas" width="400" height="400" style="position:absolute;top:10%;left:10%;border:2px solid;"></canvas>
+<canvas id="show_canvas" width="400" height="400" style="position:absolute;top:10%;left:50%;border:2px solid;"></canvas>
+<input type="button" value="run" id="btn" size="30" onclick="run()" style="position:absolute;top:55%;left:10%;">
+<input type="button" value="clear" id="clr" size="30" onclick="erase()" style="position:absolute;top:55%;left:15%;">
+<form onchange="select_mode()" style="position:absolute;top:55%;left:20%;">
+    <select id="mode">
+        <option value="1" selected="selected">generate</option>
+        <option value="2">complete</option>
+    </select>
+</form>
+<form onchange="select_category()" style="position:absolute;top:55%;left:27%;">
+    <select id="category">
+        <option value="1" selected="selected">cat</option>
+        <option value="2">mosquito</option>
+        <option value="3">ship</option>
+    </select>
+</form>
+<form onchange="select_model()" style="position:absolute;top:55%;left:34%;">
+    <select id="model">
+        <option value="1" selected="selected">trans</option>
+        <option value="2">lstm</option>
+    </select>
+</form>
+</body>

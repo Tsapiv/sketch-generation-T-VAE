@@ -186,7 +186,6 @@ def convert3to5(seq, max_seq_len, complete=False):
     seq = normalize(seq)
     seq[:, :2] /= np.std(seq[:, :2])
     len_seq = len(seq)
-    print(len_seq)
     new_seq = np.zeros((int(max(max_seq_len, len(seq) * 1.1)), 5))
     new_seq[:len_seq, :2] = seq[:, :2]
     new_seq[:len_seq - 1, 2] = 1 - seq[:-1, 2]
