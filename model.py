@@ -6,12 +6,13 @@ import torch
 import torch.nn as nn
 from torch import optim
 
-from loss_functions import reconstruction_loss, mmd_penalty
 from parameters import HParams
 from utils import to_normal_strokes, make_grid_svg, draw_strokes, sample_bivariate_normal
 
-device = torch.device("cpu")  # torch.device("cuda" if torch.cuda.is_available() else "cpu") #
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # torch.device("cpu")
+from loss_functions import reconstruction_loss, mmd_penalty
 from components import EncoderTrans, EncoderRNN, DecoderRNN
+
 
 
 class SketchModel(nn.Module):
@@ -144,7 +145,7 @@ class SketchModel(nn.Module):
 
         for i in range(number_of_sample):
             if mode == 'complete':
-                gen_strokes, org_strokes, _ = self.complete(dataloader.valid_batch(1), ratio=ratio)
+                gen_strokes, org_strokes = self.complete(dataloader.valid_batch(1), ratio=ratio)
             elif mode == 'generate':
                 gen_strokes, org_strokes = self.generate(dataloader.valid_batch(1) if condition else None)
             else:

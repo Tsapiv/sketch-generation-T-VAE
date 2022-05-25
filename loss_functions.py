@@ -1,8 +1,7 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from model import device
 
 
 def torch_2d_normal(x1, x2, mu1, mu2, s1, s2, rho):

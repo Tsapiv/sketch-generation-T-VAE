@@ -1,4 +1,7 @@
 lstm_*
 trans_*
+samples
 .idea
+*.npz
+*.pdf
 __pycache__/
