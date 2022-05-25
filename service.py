@@ -1,14 +1,14 @@
 import json
 import os.path
-from argparse import ArgumentParser
 from enum import Enum
 
-import torch
-import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pydantic.typing import List, Optional, Union
+import uvicorn
+
+import torch
 
 from model import SketchModel, device
 from parameters import HParams
@@ -23,16 +23,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-parser = ArgumentParser()
-parser.add_argument('--port', type=int, default=56000)
-args = parser.parse_args()
 
 MODELS_LOCATION = {
     'lstm': {
-        'cat': 'lstm_model/lstm-11999.pth'
+        'cat': 'models/cat/lstm/lstm-11999.pth',
+        'car': 'models/car/lstm/lstm-7999.pth',
+        'firetruck': 'models/firetruck/lstm/lstm-7999.pth'
     },
     'trans': {
-        'cat': 'trans_model/trans-11999.pth'
+        'cat': 'models/cat/trans/trans-11999.pth',
+        'car': 'models/car/trans/trans-7999.pth',
+        'firetruck': 'models/firetruck/trans/trans-7999.pth'
     }
 }
 
@@ -77,6 +78,11 @@ def complete_image(category: str, query: ModelCompeteQuery):
     return {"strokes": strokes.tolist(), "bounds": get_bounds(strokes, factor=1)}
 
 
+@app.get("/")
+def instruction():
+    return "Select mode and category!"
+
+
 @app.post("/complete/{category}")
 def complete(category: str, query: ModelCompeteQuery):
     return complete_image(category, query)
@@ -85,7 +91,3 @@ def complete(category: str, query: ModelCompeteQuery):
 @app.post("/generate/{category}")
 def generate(category: str, query: ModelGenerateQuery):
     return generate_image(category, query)
-
-
-if __name__ == '__main__':
-    uvicorn.run("service:app", reload=True)
