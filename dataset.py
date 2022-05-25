@@ -2,8 +2,7 @@ import numpy as np
 import torch
 
 from parameters import HParams
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from model import device
 
 
 class SketchDataset:

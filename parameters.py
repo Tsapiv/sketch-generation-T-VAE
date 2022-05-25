@@ -22,13 +22,13 @@ class HParams:
         self.random_scale_factor = 0.15
         self.augment_stroke_prob = 0.10
         self.dim_feedforward = 2048
-        self.single_embedding = True
-        self.dist_matching: Literal['MMD', 'KL'] = 'MMD'
+        self.single_embedding = False
+        self.dist_matching: Literal['MMD', 'KL'] = 'KL'
 
-        self.encoder: Literal['lstm', 'trans'] = 'lstm'
+        self.encoder: Literal['lstm', 'trans'] = 'trans'
         self.data_set = 'cat.npz'
-        self.model_folder = 'lstm_model'
-        self.output_folder = 'lstm_samples'
+        self.model_folder = 'trans_model'
+        self.output_folder = 'trans_samples'
 
     def update(self, config: Dict):
         self.__dict__.update(config)

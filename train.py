@@ -19,10 +19,10 @@ if __name__ == "__main__":
         print('Step:{} ** Current_LR:{} ** Current_KL:{} ** KL_Loss:{} '
               '** Recons_Loss:{} ** Total_loss:{}'.format(step, curr_learning_rate, curr_kl_weight,
                                                           kl_cost, recons_loss, loss))
-        if (step + 1) % 10 == 0:
-            model.generate_many(dataloader, step, number_of_sample=20, condition=True)
+        if (step + 1) % 100 == 0:
+            model.generate_many(dataloader, step, number_of_sample=20, grid_width=5, condition=True)
 
-        if (step + 1) % 1000 == 0:
+        if (step + 1) % 2000 == 0:
             if not os.path.exists(hp.model_folder):
                 os.makedirs(hp.model_folder)
             json.dump(vars(hp), open(os.path.join(hp.model_folder, 'config.json'), 'w'), indent=4)

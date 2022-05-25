@@ -7,6 +7,7 @@ import svgwrite
 from six.moves import xrange
 import math
 import torch.nn as nn
+from rdp import rdp
 
 
 # Temporarily leave PositionalEncoding module here. Will be moved somewhere else.
@@ -131,7 +132,7 @@ def to_normal_strokes(big_stroke):
     return result
 
 
-def get_bounds(data, factor=10):
+def get_bounds(data, factor: float = 10):
     """Return bounds of data."""
     min_x = 0
     max_x = 0
@@ -153,10 +154,40 @@ def get_bounds(data, factor=10):
     return (min_x, max_x, min_y, max_y)
 
 
-def convert3to5(seq, max_seq_len, complete=False):
+def normalize(seq):
     seq = np.asarray(seq)
+    x = np.zeros_like(seq)
+    x[:, 0] = np.cumsum(seq[:, 0])
+    x[:, 1] = np.cumsum(seq[:, 1])
+    delimiters = np.nonzero(seq[:, -1])[0]
+    if len(delimiters) == 0:
+        new_seq = np.diff(rdp(x, epsilon=2), axis=0, prepend=0)
+        new_seq = np.hstack([new_seq, np.zeros((len(new_seq), 1))])
+        new_seq[-1][-1] = 1
+        return new_seq
+    else:
+        prev = 0
+        seq_chunks = []
+        last = np.asarray([[0, 0]])
+        for idx in np.append(delimiters, len(x) - 1):
+            points = rdp(x[prev: idx + 1, :-1], epsilon=2)
+            points = np.vstack([last, points])
+            new_seq = np.diff(points, axis=0)
+            new_seq = np.hstack([new_seq, np.zeros((len(new_seq), 1))])
+            new_seq[-1][-1] = 1
+            prev = idx + 1
+            last = x[idx, :-1].reshape(1, -1)
+            seq_chunks.append(new_seq)
+    seq = np.vstack(seq_chunks)
+    return seq
+
+
+def convert3to5(seq, max_seq_len, complete=False):
+    seq = normalize(seq)
+    seq[:, :2] /= np.std(seq[:, :2])
     len_seq = len(seq)
-    new_seq = np.zeros((max_seq_len, 5))
+    print(len_seq)
+    new_seq = np.zeros((int(max(max_seq_len, len(seq) * 1.1)), 5))
     new_seq[:len_seq, :2] = seq[:, :2]
     new_seq[:len_seq - 1, 2] = 1 - seq[:-1, 2]
     new_seq[:len_seq, 3] = seq[:, 2]
