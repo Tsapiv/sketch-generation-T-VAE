@@ -3,5 +3,6 @@ trans_*
 samples
 .idea
 *.npz
+*.zip
 *.pdf
 __pycache__/

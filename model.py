@@ -9,10 +9,9 @@ from torch import optim
 from parameters import HParams
 from utils import to_normal_strokes, make_grid_svg, draw_strokes, sample_bivariate_normal
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # torch.device("cpu")
+device = torch.device("cpu")  # torch.device("cuda" if torch.cuda.is_available() else "cpu")
 from loss_functions import reconstruction_loss, mmd_penalty
 from components import EncoderTrans, EncoderRNN, DecoderRNN
-
 
 
 class SketchModel(nn.Module):
@@ -79,8 +78,6 @@ class SketchModel(nn.Module):
         batch = None
         if dataloader is not None:
             batch, lengths = dataloader
-            # batch = torch.Tensor(batch, device=device).to(device)
-            # lengths = torch.Tensor(lengths, device=device).to(device)
             batch = torch.as_tensor(batch, device=device, dtype=torch.float).view(-1, 1, 5)
             lengths = torch.as_tensor(lengths, device=device, dtype=torch.int64)
             post_dist = self.encoder(batch, lengths)
@@ -110,6 +107,7 @@ class SketchModel(nn.Module):
         batch, lengths = dataloader
         batch = torch.as_tensor(batch, device=device, dtype=torch.float).view(-1, 1, 5)
         lengths = torch.as_tensor(lengths, device=device, dtype=torch.int64)
+        original = to_normal_strokes(batch[:, 0, :].cpu().numpy())
         if ratio != 1:
             lengths = torch.LongTensor((lengths.cpu().numpy() * ratio).astype(np.int64)).to(device)
             batch[lengths[0]:, :, :] = 0
@@ -135,12 +133,13 @@ class SketchModel(nn.Module):
                 if next_state[-1] == 1:
                     break
         gen_strokes = torch.stack(gen_strokes).cpu().numpy()
-        return to_normal_strokes(gen_strokes), to_normal_strokes(batch[:, 0, :].cpu().numpy())
+        return to_normal_strokes(gen_strokes), original#, to_normal_strokes(batch[:, 0, :].cpu().numpy())
 
     def generate_many(self, dataloader=None, step=0, number_of_sample=100, condition=False, grid_width=10, save=True,
                       mode: Literal['generate', 'complete'] = 'generate', ratio=0.5):
 
         input_strokes = []
+        # shorten_input_strokes = []
         reconstructed_strokes = []
 
         for i in range(number_of_sample):
@@ -152,6 +151,7 @@ class SketchModel(nn.Module):
                 raise TypeError('Unknown mode type')
             if org_strokes is not None:
                 input_strokes.append(org_strokes)
+                # shorten_input_strokes.append(shorten_org_strokes)
             reconstructed_strokes.append(gen_strokes)
             print(i)
         if save:
@@ -161,6 +161,9 @@ class SketchModel(nn.Module):
                 if dataloader is not None and condition:
                     draw_strokes(make_grid_svg(input_strokes, grid_width=grid_width),
                                  svg_filename=os.path.join(self.hp.output_folder, f'org-{self.hp.encoder}-{step}.svg'))
+                    # draw_strokes(make_grid_svg(shorten_input_strokes, grid_width=grid_width),
+                    #              svg_filename=os.path.join(self.hp.output_folder,
+                    #                                        f'short-{self.hp.encoder}-{step}.svg'))
                 draw_strokes(make_grid_svg(reconstructed_strokes, grid_width=grid_width),
                              svg_filename=os.path.join(self.hp.output_folder, f'gen-{self.hp.encoder}-{step}.svg'))
             else:
@@ -169,6 +172,9 @@ class SketchModel(nn.Module):
                         draw_strokes(input_strokes[idx],
                                      svg_filename=os.path.join(self.hp.output_folder,
                                                                f'org-{self.hp.encoder}-{step}-{idx}.svg'))
+                        # draw_strokes(shorten_input_strokes[idx],
+                        #              svg_filename=os.path.join(self.hp.output_folder,
+                        #                                        f'short-{self.hp.encoder}-{step}-{idx}.svg'))
                     draw_strokes(reconstructed_strokes[idx],
                                  svg_filename=os.path.join(self.hp.output_folder,
                                                            f'gen-{self.hp.encoder}-{step}-{idx}.svg'))
